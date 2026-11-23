@@ -4,14 +4,20 @@ dist/
 .env.*
 !.env.example
 *.log
+<<<<<<< HEAD
 
 .env.admin
 .env.admin.*
 !.env.admin.example
+=======
+>>>>>>> origin/main
 node_modules/
 dist/
 .env
 .env.*
 !.env.example
+<<<<<<< HEAD
 !.env.admin.example
+=======
+>>>>>>> origin/main
 *.log

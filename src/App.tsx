@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import{useEffect,useState,type FormEvent}from'react';import{BrowserRouter,Link,Route,Routes,useNavigate,useParams}from'react-router-dom';import{LayoutDashboard,Ticket,PlusCircle,LogOut,Search,Shield,ArrowLeft,RefreshCw,Users}from'lucide-react';import{supabase}from'./supabase';import type{Session}from'@supabase/supabase-js';
 type Profile={id:string;full_name:string;role:string};type TicketRow={id:string;ticket_number:string;subject:string;description:string;category:string;priority:string;status:string;created_at:string;customer_id:string;assigned_to:string|null};const statuses=['NEW','OPEN','ASSIGNED','IN_PROGRESS','PENDING','ESCALATED','RESOLVED','REOPENED','CLOSED','CANCELLED'];function err(e:unknown){return e instanceof Error?e.message:String(e)}
 function App(){const[session,setSession]=useState<Session|null>(null),[profile,setProfile]=useState<Profile|null>(null),[loading,setLoading]=useState(true);useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setLoading(false)});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,s)=>setSession(s));return()=>subscription.unsubscribe()},[]);useEffect(()=>{if(!session){setProfile(null);return}supabase.from('profiles').select('id,full_name,role').eq('id',session.user.id).single().then(({data})=>setProfile(data as Profile|null))},[session]);if(loading)return <div className="center">Memuat aplikasi…</div>;if(!session)return <Login/>;return <BrowserRouter><div className="shell"><aside><div className="brand"><Shield size={25}/> <span>HelpDesk<span className="accent">Pro</span></span></div><div className="caption">TICKET MANAGEMENT</div><nav><Link to="/"><LayoutDashboard size={18}/> Dashboard</Link><Link to="/tickets"><Ticket size={18}/> Semua Tiket</Link><Link to="/tickets/new"><PlusCircle size={18}/> Buat Tiket</Link>{profile?.role==='SUPER_ADMIN'&&<Link to="/users"><Users size={18}/> Pengguna</Link>}</nav><div className="sidebottom"><div className="avatar">{(profile?.full_name||session.user.email||'U')[0].toUpperCase()}</div><div className="identity"><b>{profile?.full_name||session.user.email}</b><small>{profile?.role||'Memuat profil'}</small></div><button title="Keluar" onClick={()=>supabase.auth.signOut()}><LogOut size={18}/></button></div></aside><main><header><div><strong>Help Desk Ticket Management</strong><small>Manajemen layanan IT & jaringan</small></div><span className="online">● Sistem terhubung</span></header><div className="content"><Routes><Route path="/" element={<Dashboard profile={profile}/>}/><Route path="/tickets" element={<Tickets/>}/><Route path="/tickets/new" element={<NewTicket/>}/><Route path="/tickets/:id" element={<Detail profile={profile}/>}/><Route path="/users" element={profile?.role==='SUPER_ADMIN'?<UserManagement/>:<div className="panel pad">Akses ditolak</div>}/></Routes></div></main></div></BrowserRouter>}
@@ -10,4 +11,140 @@ function TicketTable({items,loading}:{items:TicketRow[];loading:boolean}){return
 function Tickets(){const{items,loading,error,reload}=useTickets(),[search,setSearch]=useState(''),[status,setStatus]=useState('ALL');const filtered=items.filter(t=>(status==='ALL'||t.status===status)&&(`${t.subject} ${t.ticket_number} ${t.category}`.toLowerCase().includes(search.toLowerCase())));return <><div className="pagehead"><div><h1>Manajemen Tiket</h1><p>Pantau, cari, dan kelola seluruh tiket yang Anda berwenang akses.</p></div><Link className="btn primary" to="/tickets/new"><PlusCircle size={17}/> Buat Tiket</Link></div><section className="panel"><div className="filters"><div className="search"><Search size={18}/><input placeholder="Cari nomor, subjek, kategori…" value={search} onChange={e=>setSearch(e.target.value)}/></div><select value={status} onChange={e=>setStatus(e.target.value)}><option value="ALL">Semua Status</option>{statuses.map(s=><option key={s}>{s}</option>)}</select><button className="btn" onClick={reload}><RefreshCw size={16}/> Muat ulang</button></div>{error&&<p className="error">{error}</p>}<TicketTable items={filtered} loading={loading}/></section></>}
 function NewTicket(){const nav=useNavigate(),[subject,setSubject]=useState(''),[description,setDescription]=useState(''),[category,setCategory]=useState('Internet'),[priority,setPriority]=useState('MEDIUM'),[busy,setBusy]=useState(false),[message,setMessage]=useState('');async function submit(e:FormEvent){e.preventDefault();setBusy(true);const{data,error}=await supabase.rpc('create_ticket',{p_subject:subject,p_description:description,p_category:category,p_priority:priority});setBusy(false);if(error)setMessage(error.message);else nav('/tickets/'+data)}return <><div className="pagehead"><div><Link className="back" to="/tickets"><ArrowLeft size={16}/> Kembali</Link><h1>Buat Tiket Baru</h1><p>Laporkan masalah layanan atau perangkat IT.</p></div></div><section className="panel formpanel"><form onSubmit={submit}><label>Subjek Tiket *</label><input required maxLength={160} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Contoh: Koneksi internet terputus"/><label>Kategori Gangguan *</label><select value={category} onChange={e=>setCategory(e.target.value)}>{['Internet','LAN','WiFi','Router','Switch','Server','Komputer','Printer','Software','Keamanan Jaringan','Lainnya'].map(x=><option key={x}>{x}</option>)}</select><label>Prioritas *</label><select value={priority} onChange={e=>setPriority(e.target.value)}>{['LOW','MEDIUM','HIGH','CRITICAL'].map(x=><option key={x}>{x}</option>)}</select><label>Deskripsi Gangguan *</label><textarea required minLength={10} rows={7} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Jelaskan gejala, lokasi, dan waktu gangguan…"/>{message&&<p role="alert" className="error">{message}</p>}<button className="primary" disabled={busy}>{busy?'Menyimpan…':'Kirim Tiket'}</button></form></section></>}
 function Detail({profile}:{profile:Profile|null}){const{id}=useParams(),[ticket,setTicket]=useState<TicketRow|null>(null),[history,setHistory]=useState<{id:string;created_at:string;from_status:string|null;to_status:string;note:string}[]>([]),[message,setMessage]=useState(''),[note,setNote]=useState(''),[next,setNext]=useState(''),[assignee,setAssignee]=useState(''),[users,setUsers]=useState<Profile[]>([]);const staff=['SUPER_ADMIN','SUPERVISOR','HELP_DESK'].includes(profile?.role||'');async function load(){const [t,h]=await Promise.all([supabase.from('tickets').select('*').eq('id',id).single(),supabase.from('ticket_activities').select('id,created_at,from_status,to_status,note').eq('ticket_id',id).order('created_at',{ascending:false})]);if(t.error)setMessage(t.error.message);else setTicket(t.data as TicketRow);setHistory(h.data||[])}useEffect(()=>{void load()},[id]);useEffect(()=>{if(staff)supabase.from('profiles').select('id,full_name,role').in('role',['TECHNICIAN','NOC_ENGINEER']).then(({data})=>setUsers(data||[]))},[staff]);async function transition(){if(!next)return;const{error}=await supabase.rpc('transition_ticket',{p_ticket_id:id,p_next:next,p_note:note});setMessage(error?.message||'Status diperbarui');if(!error){setNote('');void load()}}async function assign(){if(!assignee)return;const{error}=await supabase.rpc('assign_ticket',{p_ticket_id:id,p_assignee:assignee,p_note:note});setMessage(error?.message||'Teknisi ditugaskan');if(!error){setNote('');void load()}}if(!ticket)return <div className="panel pad">{message||'Memuat tiket…'}</div>;const canTechnician=profile?.id===ticket.assigned_to;const options=staff?['OPEN','IN_PROGRESS','PENDING','ESCALATED','RESOLVED','REOPENED','CLOSED','CANCELLED']:canTechnician?['IN_PROGRESS','PENDING','ESCALATED','RESOLVED']:profile?.id===ticket.customer_id?['REOPENED']:[];return <><div className="pagehead"><div><Link className="back" to="/tickets"><ArrowLeft size={16}/> Semua Tiket</Link><h1>{ticket.ticket_number}</h1><p>{ticket.subject}</p></div><Badge value={ticket.status}/></div><div className="detailgrid"><section className="panel pad"><h2>Informasi Tiket</h2><div className="details"><div><small>Kategori</small><b>{ticket.category}</b></div><div><small>Prioritas</small><Badge value={ticket.priority}/></div><div><small>Status</small><Badge value={ticket.status}/></div><div><small>Dibuat</small><b>{new Date(ticket.created_at).toLocaleString('id-ID')}</b></div></div><h3>Deskripsi Gangguan</h3><p className="description">{ticket.description}</p></section><section className="panel pad"><h2>Tindakan Tiket</h2><label>Catatan perubahan / tindakan</label><textarea rows={4} value={note} onChange={e=>setNote(e.target.value)} placeholder="Alasan atau dokumentasi tindakan…"/>{staff&&<><label>Delegasikan ke Teknisi / NOC</label><select value={assignee} onChange={e=>setAssignee(e.target.value)}><option value="">Pilih petugas</option>{users.map(u=><option value={u.id} key={u.id}>{u.full_name} — {u.role}</option>)}</select><button className="btn" disabled={!assignee} onClick={assign}>Delegasikan</button></>}{options.length>0&&<><label>Ubah Status</label><select value={next} onChange={e=>setNext(e.target.value)}><option value="">Pilih status</option>{options.map(s=><option key={s}>{s}</option>)}</select><button className="primary" disabled={!next} onClick={transition}>Simpan Perubahan</button></>}{message&&<p role="status" className="message">{message}</p>}<small>Perubahan divalidasi ulang oleh fungsi database.</small></section></div><section className="panel pad history"><h2>Riwayat Aktivitas</h2>{history.map(h=><div className="event" key={h.id}><span className="dot"/><div><b>{h.from_status||'—'} → {h.to_status}</b><p>{h.note||'Perubahan status tiket'}</p><small>{new Date(h.created_at).toLocaleString('id-ID')}</small></div></div>)}{!history.length&&<p>Belum ada aktivitas.</p>}</section></>}
+=======
+import { useEffect, useState, type FormEvent } from 'react';
+import { BrowserRouter, Link, Route, Routes, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { LayoutDashboard, Ticket, PlusCircle, LogOut, Search, Shield, ArrowLeft, RefreshCw } from 'lucide-react';
+import supabase from './supabase';
+import type { Session } from '@supabase/supabase-js';
+
+type Profile = { id: string; full_name: string; role: string };
+type TicketRow = {
+  id: string;
+  ticket_number: string;
+  subject: string;
+  description: string;
+  category: string;
+  priority: string;
+  status: string;
+  created_at: string;
+  customer_id: string;
+  assigned_to: string | null;
+};
+const statuses = ['NEW','OPEN','ASSIGNED','IN_PROGRESS','PENDING','ESCALATED','RESOLVED','REOPENED','CLOSED','CANCELLED'];
+function err(e: unknown) { return e instanceof Error ? e.message : String(e); }
+
+function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // Initialise auth session and subscribe to changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Load user profile whenever a session exists
+  useEffect(() => {
+    if (!session) { setProfile(null); return; }
+    supabase
+      .from('profiles')
+      .select('id,full_name,role')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => setProfile(data as Profile | null));
+  }, [session]);
+
+  if (loading) return <div className="center">Memuat aplikasi…</div>;
+  if (!session) return <Login />;
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={session ? <Shell profile={profile} session={session} navigate={navigate} /> : <Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function Shell({ profile, session, navigate }: { profile: Profile | null; session: Session; navigate: (path: string) => void }) {
+  return (
+    <div className="shell">
+      <aside>
+        <div className="brand">
+          <Shield size={25} /> <span>HelpDesk<span className="accent">Pro</span></span>
+        </div>
+        <div className="caption">TICKET MANAGEMENT</div>
+        <nav>
+          <Link to="/"><LayoutDashboard size={18} /> Dashboard</Link>
+          <Link to="/tickets"><Ticket size={18} /> Semua Tiket</Link>
+          <Link to="/tickets/new"><PlusCircle size={18} /> Buat Tiket</Link>
+        </nav>
+        <div className="sidebottom">
+          <div className="avatar">{(profile?.full_name || session.user.email || 'U')[0].toUpperCase()}</div>
+          <div className="identity"><b>{profile?.full_name || session.user.email}</b> <small>{profile?.role || 'Memuat profil'}</small></div>
+          <button title="Keluar" onClick={() => { supabase.auth.signOut(); navigate('/login'); }}><LogOut size={18} /></button>
+        </div>
+      </aside>
+      <main>
+        {/* Keep the original routing for the rest of the app */}
+        <Routes>
+          <Route path="/" element={<Dashboard profile={profile} />} />
+          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/tickets/new" element={<NewTicket />} />
+          <Route path="/tickets/:id" element={<Detail profile={profile} />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setMessage(error?.message || 'Berhasil masuk');
+    setBusy(false);
+    if (!error) navigate('/');
+  }
+
+  return (
+    <div className="login">
+      <div className="login-card">
+        <div className="logo"><Shield size={32} /></div>
+        <h1>Selamat Datang</h1>
+        <p>Masuk ke HelpDesk Pro untuk mengelola layanan IT Anda.</p>
+        <form onSubmit={submit}>
+          <label>Email</label>
+          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="nama@perusahaan.com" />
+          <label>Password</label>
+          <input type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+          <button className="primary" disabled={busy}>{busy ? 'Memproses…' : 'Masuk ke Dashboard'}</button>
+        </form>
+        {message && <p role="alert" className="message">{message}</p>}
+        <small>Akun dibuat oleh administrator melalui Supabase Auth.</small>
+      </div>
+    </div>
+  );
+}
+
+// (The rest of the component implementations – Dashboard, Tickets, NewTicket, Detail, etc. – remain unchanged and are imported below)
+
+>>>>>>> origin/main
 export default App;
