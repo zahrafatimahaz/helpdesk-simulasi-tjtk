@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+
+.env.admin
+.env.admin.*
+!.env.admin.example
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+!.env.admin.example
+*.log
