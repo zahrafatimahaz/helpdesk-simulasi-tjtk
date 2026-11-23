@@ -49,3 +49,4 @@ Push ke GitHub tanpa `.env`, import repo di Vercel (framework Vite), tambahkan `
 - Akun staf harus disiapkan melalui SQL Editor/admin terotorisasi.
 - Belum ada multi-workspace; gunakan hanya data simulasi dan jangan masukkan data pelanggan nyata.
 # helpdesk-simulasi-tjtk
+# helpdesk-simulasi-tjtk
